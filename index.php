@@ -1,49 +1,24 @@
 <?php
-/** * 1. CONFIGURATION 
- * Create an INBOUND webhook in Developer Resources -> Other -> Inbound Webhook
- * with "CRM" permissions. Copy the URL here.
- */
-$rest_url = "https://your-domain.bitrix24.com/rest/1/your-token/";
-
-// Define the path to your custom log file
+/** * 1. CONFIGURATION */
+$rest_url = "https://13.126.130.239.sslip.io/rest/1/abdwqrh1tspn3dj8/";
 $log_file = __DIR__ . '/webhook_log.txt';
 
-// Helper function to write to the custom text file
 function writeLog($message, $file) {
     $timestamp = date("Y-m-d H:i:s");
-    $log_entry = "[$timestamp] " . $message . PHP_EOL;
-    // FILE_APPEND ensures we don't overwrite previous logs
+    $log_entry = "[$timestamp] " . (is_array($message) ? print_r($message, true) : $message) . PHP_EOL;
     file_put_contents($file, $log_entry, FILE_APPEND);
 }
 
-// =========================================================================
-// 2. CAPTURE & LOG DATA FROM OUTBOUND WEBHOOK
-// =========================================================================
-
-// LOG ALL FIELDS: Dump the entire POST payload to the text file
-// LOG ALL FIELDS: Dump the entire POST payload to the text file
+// 2. CAPTURE INCOMING WEBHOOK (Only contains ID)
 writeLog("=== INCOMING BITRIX WEBHOOK POST DATA ===", $log_file);
-writeLog(print_r($_POST, true), $log_file);
-writeLog("===========================================", $log_file);
+writeLog($_POST, $log_file);
 
-// Extract the Lead ID
 $lead_id = $_POST['data']['FIELDS']['ID'] ?? null;
 
-// LOG SPECIFIC FIELD (ID)
-writeLog("Extracted Lead ID: " . ($lead_id ?: "NONE FOUND"), $log_file);
-
-// FIX: LOG THE SPECIFIC FIELDS ARRAY
-if (isset($_POST['data']['FIELDS']) && is_array($_POST['data']['FIELDS'])) {
-    writeLog("Extracted Lead FIELDS: " . print_r($_POST['data']['FIELDS'], true), $log_file);
-} else {
-    writeLog("Extracted Lead FIELDS: NONE FOUND", $log_file);
-}
-
 if (!$lead_id) {
-    writeLog("ERROR: No Lead ID received from Bitrix. Exiting script.", $log_file);
+    writeLog("ERROR: No Lead ID received. Exiting.", $log_file);
     exit;
 }
-// =========================================================================
 
 /**
  * Helper function for Bitrix REST API calls
@@ -63,11 +38,21 @@ function callBitrix($method, $params, $url) {
     return json_decode($result, true);
 }
 
-// STEP 1: Fetch the newly created Lead's details
-$lead_data = callBitrix('crm.lead.get', ['id' => $lead_id], $rest_url);
-$fields = $lead_data['result'];
+// =========================================================================
+// 3. FETCH FULL LEAD DETAILS (This is where the actual form data is)
+// =========================================================================
+$lead_result = callBitrix('crm.lead.get', ['id' => $lead_id], $rest_url);
+$fields = $lead_result['result'] ?? null;
 
-// Helper to format Multi-fields (Phone/Email) for the new Contact
+if ($fields) {
+    writeLog("--- FULL EXTRACTED FORM DATA FOR LEAD #$lead_id ---", $log_file);
+    writeLog($fields, $log_file); // THIS WILL LOG NAME, PHONE, EMAIL, ETC.
+} else {
+    writeLog("ERROR: Could not fetch details for Lead #$lead_id", $log_file);
+    exit;
+}
+
+// Helper to format Multi-fields (Phone/Email)
 $formatMultiField = function($items) {
     $output = [];
     if (is_array($items)) {
@@ -81,34 +66,31 @@ $formatMultiField = function($items) {
     return $output;
 };
 
-// STEP 2: Create the Contact
+// 4. CREATE THE CONTACT
 $contact_params = [
     'fields' => [
-        'NAME'         => $fields['NAME'],
-        'LAST_NAME'    => $fields['LAST_NAME'],
-        'SECOND_NAME'  => $fields['SECOND_NAME'],
-        'EMAIL'        => $formatMultiField($fields['EMAIL']),
-        'PHONE'        => $formatMultiField($fields['PHONE']),
-        'OPENED'       => 'Y',
-        'TYPE_ID'      => 'CLIENT',
-        'ASSIGNED_BY_ID' => $fields['ASSIGNED_BY_ID'] // Keep the same owner
+        'NAME'           => $fields['NAME'] ?? '',
+        'LAST_NAME'      => $fields['LAST_NAME'] ?? '',
+        'SECOND_NAME'    => $fields['SECOND_NAME'] ?? '',
+        'EMAIL'          => $formatMultiField($fields['EMAIL'] ?? []),
+        'PHONE'          => $formatMultiField($fields['PHONE'] ?? []),
+        'OPENED'         => 'Y',
+        'TYPE_ID'        => 'CLIENT',
+        'ASSIGNED_BY_ID' => $fields['ASSIGNED_BY_ID'] ?? ''
     ]
 ];
 
 $contact_result = callBitrix('crm.contact.add', $contact_params, $rest_url);
-$new_contact_id = $contact_result['result'];
+$new_contact_id = $contact_result['result'] ?? null;
 
-// STEP 3: Link the Lead to the new Contact
+// 5. LINK LEAD TO CONTACT
 if ($new_contact_id) {
-    $update_params = [
+    callBitrix('crm.lead.update', [
         'id' => $lead_id,
-        'fields' => [
-            'CONTACT_ID' => $new_contact_id
-        ]
-    ];
-    callBitrix('crm.lead.update', $update_params, $rest_url);
+        'fields' => ['CONTACT_ID' => $new_contact_id]
+    ], $rest_url);
+    writeLog("SUCCESS: Lead #$lead_id linked to Contact #$new_contact_id", $log_file);
+} else {
+    writeLog("FAILED to create contact for Lead #$lead_id", $log_file);
 }
-
-// Log success to your custom text file
-writeLog("SUCCESS: Lead #$lead_id successfully linked to Contact #$new_contact_id", $log_file);
 ?>
