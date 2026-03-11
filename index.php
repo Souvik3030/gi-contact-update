@@ -72,11 +72,20 @@ $contact_params = [
         'NAME'           => $fields['UF_CRM_1741123034066'] ?? '',
         // 'LAST_NAME'      => $fields['LAST_NAME'] ?? '',
         // 'SECOND_NAME'    => $fields['SECOND_NAME'] ?? '',
-        'EMAIL'          => $formatMultiField($fields['UF_CRM_1741127499'][0] ?? []),
-        'PHONE'          => $formatMultiField($fields['UF_CRM_1741126758'][0] ?? []),
-        // 'OPENED'         => 'Y',
-        // 'TYPE_ID'        => 'CLIENT',
-        // 'ASSIGNED_BY_ID' => $fields['ASSIGNED_BY_ID'] ?? ''
+        'EMAIL' => [
+            [
+                "VALUE" => $fields['UF_CRM_1741127499'] ?? '', 
+                "VALUE_TYPE" => "WORK"
+            ]
+        ],
+        'PHONE' => [
+            [
+                "VALUE" => $fields['UF_CRM_1741126758'] ?? '', 
+                "VALUE_TYPE" => "WORK" 
+            ]
+        ],
+        // 'EMAIL'          => $formatMultiField($fields['UF_CRM_1741127499'][0] ?? []),
+        // 'PHONE'          => $formatMultiField($fields['UF_CRM_1741126758'][0] ?? []),
     ]
 ];
 
