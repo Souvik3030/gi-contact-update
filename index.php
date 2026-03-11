@@ -69,23 +69,21 @@ $formatMultiField = function($items) {
 // 4. CREATE THE CONTACT
 $contact_params = [
     'fields' => [
-        'NAME'           => $fields['UF_CRM_1741123034066'] ?? '',
-        // 'LAST_NAME'      => $fields['LAST_NAME'] ?? '',
-        // 'SECOND_NAME'    => $fields['SECOND_NAME'] ?? '',
+        'NAME' => $fields['UF_CRM_1741123034066'] ?? '',
+
         'EMAIL' => [
             [
-                "VALUE" => $fields['UF_CRM_1741127499'] ?? '', 
+                "VALUE" => $fields['UF_CRM_1741127499'][0] ?? '',
                 "VALUE_TYPE" => "WORK"
             ]
         ],
+
         'PHONE' => [
             [
-                "VALUE" => $fields['UF_CRM_1741126758'] ?? '', 
-                "VALUE_TYPE" => "WORK" 
+                "VALUE" => $fields['UF_CRM_1741126758'][0] ?? '',
+                "VALUE_TYPE" => "WORK"
             ]
-        ],
-        // 'EMAIL'          => $formatMultiField($fields['UF_CRM_1741127499'][0] ?? []),
-        // 'PHONE'          => $formatMultiField($fields['UF_CRM_1741126758'][0] ?? []),
+        ]
     ]
 ];
 
