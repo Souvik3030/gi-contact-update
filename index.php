@@ -100,4 +100,30 @@ if ($new_contact_id) {
 } else {
     writeLog("FAILED to create contact for Lead #$lead_id", $log_file);
 }
+
+
+/* ================================
+ LINK CONTACT TO LEAD
+================================ */
+if ($contact_id) {
+
+    $update = callBitrix(
+        'crm.lead.update',
+        [
+            'id' => $lead_id,
+            'fields' => [
+                'CONTACT_IDS' => [$contact_id]
+            ]
+        ],
+        $rest_url
+    );
+
+    writeLog("Lead Updated With Contact ID: $contact_id", $log_file);
+    writeLog($update, $log_file);
+
+} else {
+
+    writeLog("ERROR: Contact creation failed", $log_file);
+
+}
 ?>
