@@ -21,15 +21,23 @@ function writeLog($message, $file) {
 // =========================================================================
 
 // LOG ALL FIELDS: Dump the entire POST payload to the text file
+// LOG ALL FIELDS: Dump the entire POST payload to the text file
 writeLog("=== INCOMING BITRIX WEBHOOK POST DATA ===", $log_file);
 writeLog(print_r($_POST, true), $log_file);
 writeLog("===========================================", $log_file);
 
-// Bitrix sends the Lead ID via POST when a new lead is created
+// Extract the Lead ID
 $lead_id = $_POST['data']['FIELDS']['ID'] ?? null;
 
-// LOG SPECIFIC FIELD
-writeLog("Extracted Lead ID: " . ($lead_id ? $lead_id : "NONE FOUND"), $log_file);
+// LOG SPECIFIC FIELD (ID)
+writeLog("Extracted Lead ID: " . ($lead_id ?: "NONE FOUND"), $log_file);
+
+// FIX: LOG THE SPECIFIC FIELDS ARRAY
+if (isset($_POST['data']['FIELDS']) && is_array($_POST['data']['FIELDS'])) {
+    writeLog("Extracted Lead FIELDS: " . print_r($_POST['data']['FIELDS'], true), $log_file);
+} else {
+    writeLog("Extracted Lead FIELDS: NONE FOUND", $log_file);
+}
 
 if (!$lead_id) {
     writeLog("ERROR: No Lead ID received from Bitrix. Exiting script.", $log_file);
