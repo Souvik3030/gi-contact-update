@@ -1,6 +1,6 @@
 <?php
 /** * 1. CONFIGURATION */
-$rest_url = "https://13.126.130.239.sslip.io/rest/1/abdwqrh1tspn3dj8/";
+$rest_url = "";
 $log_file = __DIR__ . '/webhook_log.txt';
 
 function writeLog($message, $file) {
